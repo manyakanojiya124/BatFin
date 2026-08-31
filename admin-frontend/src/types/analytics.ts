@@ -1,0 +1,34 @@
+export type AnalyticsDatasetStatus = "UPLOADING" | "PROCESSING" | "PROFILING" | "ANALYZING" | "GENERATING" | "READY" | "FAILED";
+export interface AnalyticsDataset { id:string; name:string; description:string|null; status:AnalyticsDatasetStatus; processingStage:string; processingMessage:string|null; rowCount:number; columnCount:number; datasetVersion:number; semanticModelVersion:number; createdAt:string; updatedAt:string; file:{id:string;originalFileName:string;fileType:string;sizeBytes:number;sha256:string;status:string;version:number}|null; sheetCount:number; dashboardCount:number; }
+export interface AnalyticsStatus {datasetId:string;status:AnalyticsDatasetStatus;stage:string;message:string|null;rowCount:number;columnCount:number;datasetVersion:number;semanticModelVersion:number;failure:{code:string|null;message:string|null}|null;events:Array<{id:string;sequence:number;stage:string;status:string;message:string;createdAt:string}>;}
+export interface AnalyticsSheet {id:string;name:string;sheetIndex:number;status:string;sourceRowCount:number;normalizedRowCount:number;columnCount:number;detectedHeaderRow:number|null;dataStartRow:number|null;recommendedAsPrimary:boolean;recommendationScore:number|null;recommendationReason:string|null;metadata:unknown;sampleRows:unknown;}
+export interface AnalyticsColumn {id?:string;normalizedName:string;originalName?:string;displayName:string;dataType:string;semanticType:string;nullable?:boolean;uniqueCount?:number;nullPercentage?:number|string;sampleValues?:unknown[];}
+export type AnalyticsFormat = "NUMBER" | "CURRENCY" | "PERCENTAGE";
+export interface SemanticModel {
+  schemaVersion:1; title:string; datasetSummary:string; businessDomain:string; domainKey?:"generic"|"finance"|"sales"|"hr"|"inventory"|"batfin"; defaultCurrencyCode?:string|null;
+  identifiers:Array<{field:string;label:string;description:string;confidence?:number}>;
+  dimensions:Array<{field:string;label:string;kind:string;role?:"CATEGORY"|"STATUS"|"GEOGRAPHY"|"ENTITY"|"RISK"|"SEGMENT";description:string;confidence?:number}>;
+  measures:Array<{id:string;field:string|null;label:string;kind:string;aggregation:string;format:AnalyticsFormat;currencyCode?:string|null;unit?:string|null;role?:string;additive?:boolean;description:string;confidence?:number}>;
+  dateFields:Array<{field:string;label:string;type:string;defaultGrain?:TimeGrain;description:string;confidence?:number}>;
+  suggestedFilters:Array<{field:string;label:string;type:string}>;
+  calculatedMetrics:Array<{id:string;label:string;operation:string;numeratorField:string;denominatorField:string;multiplier:number;format:AnalyticsFormat;currencyCode?:string|null;unit?:string|null;role?:string;description:string;confidence?:number}>;
+}
+export type VisualizationType="KPI"|"BAR"|"LINE"|"AREA"|"PIE"|"DONUT"|"SCATTER"|"TABLE"|"STACKED_BAR"|"STACKED_AREA";
+export type TimeGrain="AUTO"|"DAY"|"WEEK"|"MONTH"|"QUARTER"|"YEAR";
+export type AnalyticsSort="VALUE_DESC"|"VALUE_ASC"|"LABEL_ASC"|"LABEL_DESC"|"TIME_ASC";
+export interface DashboardFilterSpec {id:string;field:string;label:string;type:"SELECT"|"MULTI_SELECT"|"DATE_RANGE"|"NUMERIC_RANGE"|"BOOLEAN"|"SEARCH";}
+export interface DashboardVisualizationSpec {id:string;type:VisualizationType;title:string;description:string|null;dimension:string|null;measure:string|null;secondaryMeasure:string|null;aggregation:"SUM"|"AVG"|"MIN"|"MAX"|"COUNT"|null;stackBy:string|null;columns:string[];limit:number;timeGrain?:TimeGrain;sort?:AnalyticsSort;topN?:number;showOther?:boolean;formatOverride?:"AUTO"|AnalyticsFormat;layout:{x:number;y:number;w:number;h:number};visible:boolean;}
+export interface DashboardInsightSpec {id:string;title:string;content:string;evidence:Array<{kind:string;field:string|null;metric:string;value:string|number|boolean|null}>;confidence:number|null;}
+export interface DashboardSpecification {schemaVersion:1;title:string;description:string;filters:DashboardFilterSpec[];visualizations:DashboardVisualizationSpec[];insights:DashboardInsightSpec[];}
+export interface AnalyticsDashboardSummary {id:string;title:string;description:string|null;status:string;createdAt:string;updatedAt:string;dataset:{id:string;name:string;status:string;rowCount:number;columnCount:number};currentVersion:{id:string;version:number;source:string;visualizationCount:number;createdAt:string}|null;versionCount:number;}
+export interface AnalyticsDashboardDetail {id:string;title:string;description:string|null;status:string;datasetId:string;createdAt:string;updatedAt:string;dataset:{id:string;name:string;rowCount:number;columnCount:number;datasetVersion:number};currentVersion:{id:string;version:number;source:string;visualizationCount:number;generationMetadata:Record<string,unknown>;filterState:DashboardQueryFilter[];createdAt:string};specification:DashboardSpecification;columns:AnalyticsColumn[];semanticModel:SemanticModel;}
+export interface DashboardQueryFilter {field:string;type:string;value?:string|number|boolean;values?:Array<string|number|boolean>;from?:string|number;to?:string|number;}
+export interface MeasureFormatMeta {format:AnalyticsFormat;currencyCode:string|null;unit:string|null;label:string;}
+export interface AggregateQueryResult {mode:"AGGREGATE";dimension:string|null;stackBy?:string|null;measure:string;format:MeasureFormatMeta;timeGrain?:string|null;rows:Array<{dimension:string|null;stack?:string|null;value:number|null;secondaryValue:number|null;rowCount:number}>;}
+export interface TableQueryResult {mode:"TABLE";fields:string[];fieldTypes?:Record<string,string>;rows:Array<{rowNumber:number;data:Record<string,unknown>}>;pagination:{page:number;pageSize:number;total:number;totalPages:number};}
+export interface HistogramQueryResult {mode:"HISTOGRAM";measure:string;format:MeasureFormatMeta;rows:Array<{bucket:number;lower:number|null;upper:number|null;value:number}>;}
+export interface CorrelationQueryResult {mode:"CORRELATION";measure:string;secondaryMeasure:string;correlation:number|null;rowCount:number;}
+export type DashboardQueryResult=AggregateQueryResult|TableQueryResult|HistogramQueryResult|CorrelationQueryResult;
+export interface AnalyticsBatchQueryResult {dashboardVersion:number;widgets:Record<string,{result?:DashboardQueryResult;error?:string}>;}
+export interface AnalyticsFilterOptions {field:string;search:string;hasMore:boolean;options:Array<{value:string;count:number}>;}
+export interface AnalyticsAskResult {question:string;intent:{intent:"RANK"|"TREND"|"BREAKDOWN"|"SUMMARY";dimension:string|null;measure:string;aggregation:string;timeGrain:TimeGrain;topN:number;rationale:string};answer:{summary:string;bullets:string[];methodology:string;evidenceRefs:string[]};evidence:Array<{id:string;dimension:unknown;value:unknown;rowCount:unknown}>;chart:DashboardQueryResult;source:{intent:string;explanation:string;provider:string|null;model:string|null};}

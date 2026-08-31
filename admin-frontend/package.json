@@ -1,0 +1,47 @@
+{
+  "name": "batfin-admin-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5174",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "preview": "vite preview --host 0.0.0.0 --port 4174"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "lucide-react": "^1.31.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.8.0",
+    "recharts": "^3.10.1",
+    "zustand": "^5.0.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^22.17.2",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.33.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "jsdom": "^26.1.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.39.1",
+    "vite": "^7.1.2",
+    "vitest": "^3.2.7"
+  }
+}

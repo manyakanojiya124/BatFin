@@ -1,0 +1,3 @@
+export interface UserPortfolioCase{id:string;batteryNo:string|null;batteryIsPlaceholder:boolean;deploymentState:string;dealerHomeState:string|null;caseStatus:string;bucket:string;disburseDate:string;vintageMonth:string;closedDate:string|null;tenureMonths:number;emi:number;dpAmount:number;contractedDemand:number;billedToDate:number;futureDemand:number;delinquent:boolean;npaRepo:boolean;dealer:{id:string;name:string;homeState:string|null}}
+export interface UserPortfolioAccount{id:string;customerLoanId:string;customerName:string;portfolioStatus:string;cases:UserPortfolioCase[];financial:{emi:number;dpAmount:number;contractedDemand:number;billedToDate:number;futureDemand:number}}
+export interface UserPortfolio{accounts:UserPortfolioAccount[]}

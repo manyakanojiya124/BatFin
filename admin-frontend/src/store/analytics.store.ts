@@ -1,0 +1,4 @@
+import { create } from "zustand";
+import type { DashboardQueryFilter } from "../types/analytics";
+interface AnalyticsDashboardState {dashboardId:string|null;filters:Record<string,DashboardQueryFilter>;setDashboard:(id:string)=>void;setFilters:(filters:DashboardQueryFilter[])=>void;setFilter:(id:string,filter:DashboardQueryFilter|null)=>void;reset:()=>void;}
+export const useAnalyticsDashboardStore=create<AnalyticsDashboardState>((set)=>({dashboardId:null,filters:{},setDashboard:(id)=>set((state)=>state.dashboardId===id?state:{dashboardId:id,filters:{}}),setFilters:(items)=>set({filters:Object.fromEntries(items.map((item,index)=>[`${item.field}:${index}`,item]))}),setFilter:(id,filter)=>set((state)=>{const filters={...state.filters};if(filter)filters[id]=filter;else delete filters[id];return{filters};}),reset:()=>set({dashboardId:null,filters:{}})}));

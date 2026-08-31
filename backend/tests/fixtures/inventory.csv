@@ -1,0 +1,4 @@
+SKU,Warehouse,Category,Stock Status,Quantity,Unit Cost,Reorder Flag
+A-1,Delhi,Battery,In Stock,120,7000,0
+A-2,Noida,Charger,Low Stock,8,2000,1
+A-3,Delhi,Battery,In Stock,85,7200,0

@@ -1,0 +1,831 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  phone         String   @unique
+  email         String?
+  address       String?
+  passwordHash  String?
+  accountStatus  String    @default("active") // active | suspended | closed
+  lastLoginAt    DateTime?
+  lastActivityAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  assets            Asset[]
+  subscriptions     Subscription[]
+  transactions      Transaction[]
+  tickets           SupportTicket[]
+  portfolioAccounts PortfolioAccount[]
+  activities        CustomerActivity[]
+
+  @@index([accountStatus, createdAt])
+  @@index([lastActivityAt])
+}
+
+model Asset {
+  id               String    @id @default(uuid())
+  userId           String?
+  assetType        String // "battery" | "vehicle"
+  productType      String // "Battery L5", "2 Wheeler", etc.
+  serialNumber     String    @unique
+  vehicleNumber    String?
+  status           String    @default("active") // active | locked | inactive
+  inventoryStatus  String    @default("assigned") // available | assigned | maintenance | retired
+  latitude         Float?
+  longitude        Float?
+  batteryLevel     Int?
+  temperature      Float?
+  qrTokenHash      String?   @unique
+  qrIssuedAt       DateTime?
+  verifiedAt       DateTime?
+  batchId          String?
+  createdByAdminId String?
+  createdAt        DateTime  @default(now())
+
+  user           User?           @relation(fields: [userId], references: [id])
+  batch          AssetBatch?     @relation(fields: [batchId], references: [id])
+  createdByAdmin AdminUser?      @relation(fields: [createdByAdminId], references: [id])
+  subscriptions  Subscription[]
+  supportTickets SupportTicket[]
+}
+
+model Plan {
+  id             String @id @default(uuid())
+  name           String
+  type           String // PREPAID | POSTPAID
+  billingCycle   String // DAILY | WEEKLY | MONTHLY | FLEXIBLE | 3_DAYS | 7_DAYS | 15_DAYS | 30_DAYS
+  minimumBalance Float?
+  creditLimit    Float?
+  pricePerKm     Float?
+  pricePerKwh    Float?
+  status         String @default("active")
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String
+  assetId   String
+  planId    String
+  startDate DateTime @default(now())
+  status    String   @default("active")
+
+  user  User  @relation(fields: [userId], references: [id])
+  asset Asset @relation(fields: [assetId], references: [id])
+  plan  Plan  @relation(fields: [planId], references: [id])
+}
+
+model Transaction {
+  id                    String   @id @default(uuid())
+  userId                String
+  assetId               String?
+  type                  String // RENTAL | PAYMENT | PENALTY | INSURANCE | REFUND | ADJUSTMENT | DEPOSIT | SECURITY | PROCESSING_FEE | CHALLAN | AMC | PARKING | CHARGING
+  amount                Decimal  @db.Decimal(14, 2)
+  direction             String // DEBIT | CREDIT
+  description           String?
+  status                String   @default("completed") // pending | completed | failed
+  providerReference     String?  @unique
+  paymentMethod         String? // UPI | CARD | NET_BANKING
+  source                String   @default("system") // system | customer_payment | admin_adjustment | admin_refund
+  originalTransactionId String?
+  createdByAdminId      String?
+  adminReason           String?
+  idempotencyKey        String?  @unique
+  transactionDate       DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                User          @relation(fields: [userId], references: [id])
+  originalTransaction Transaction?  @relation("TransactionReversals", fields: [originalTransactionId], references: [id], onDelete: Restrict)
+  reversals           Transaction[] @relation("TransactionReversals")
+  createdByAdmin      AdminUser?    @relation("AdminFinanceTransactions", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+
+  @@index([userId, transactionDate])
+  @@index([type, status, transactionDate])
+  @@index([originalTransactionId, status])
+  @@index([createdByAdminId, transactionDate])
+}
+
+model SupportTicket {
+  id                String    @id @default(uuid())
+  userId            String
+  assetId           String?
+  assignedAdminId   String?
+  type              String // ACCIDENT | HEALTH_ISSUE | LEASE_PAUSE | NOC_TRANSFER | COMPLAINT | FORECLOSURE | REPORT_ISSUE | OTHER
+  description       String
+  priority          String    @default("normal") // low | normal | high | critical
+  status            String    @default("open") // open | in_progress | resolved | closed
+  resolutionMessage String?
+  slaDueAt          DateTime?
+  firstResponseAt   DateTime?
+  resolvedAt        DateTime?
+  closedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user          User                @relation(fields: [userId], references: [id])
+  asset         Asset?              @relation(fields: [assetId], references: [id])
+  assignedAdmin AdminUser?          @relation("TicketAssignee", fields: [assignedAdminId], references: [id])
+  notes         SupportTicketNote[]
+
+  @@index([assetId])
+  @@index([status, priority, createdAt])
+  @@index([assignedAdminId, status])
+  @@index([slaDueAt, status])
+}
+
+model SupportTicketNote {
+  id          String   @id @default(uuid())
+  ticketId    String
+  adminUserId String
+  body        String
+  createdAt   DateTime @default(now())
+
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  adminUser AdminUser     @relation(fields: [adminUserId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@index([adminUserId, createdAt])
+}
+
+model AdminUser {
+  id                  String    @id @default(uuid())
+  name                String
+  email               String    @unique
+  passwordHash        String
+  role                String // SUPPORT_AGENT | OPERATIONS_MANAGER | FINANCE_MANAGER | AUDITOR | SUPER_ADMIN
+  status              String    @default("invited") // invited | active | suspended | disabled
+  totpSecretEncrypted String?
+  totpVerifiedAt      DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  mustChangePassword  Boolean   @default(true)
+  passwordChangedAt   DateTime?
+  lastLoginAt         DateTime?
+  invitedByAdminId    String?
+  invitedAt           DateTime?
+  credentialsResetAt  DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  sessions                   AdminSession[]
+  revokedSessions            AdminSession[]              @relation("SessionRevoker")
+  loginChallenges            AdminLoginChallenge[]
+  backupCodes                AdminBackupCode[]
+  auditLogs                  AdminAuditLog[]
+  assetBatches               AssetBatch[]
+  createdAssets              Asset[]
+  assignedTickets            SupportTicket[]             @relation("TicketAssignee")
+  ticketNotes                SupportTicketNote[]
+  financeTransactions        Transaction[]               @relation("AdminFinanceTransactions")
+  invitedBy                  AdminUser?                  @relation("AdminInviter", fields: [invitedByAdminId], references: [id], onDelete: SetNull)
+  invitedAdmins              AdminUser[]                 @relation("AdminInviter")
+  settingsUpdates            SystemSetting[]
+  masterDataImports          MasterDataImportJob[]
+  masterDataVersions         MasterDataRecordVersion[]
+  customerIdentityImports    CustomerIdentityImportJob[]
+  analyticsDatasets          AnalyticsDataset[]          @relation("AnalyticsDatasetOwner")
+  analyticsSemanticModels    AnalyticsSemanticModel[]    @relation("AnalyticsSemanticModelCreator")
+  analyticsDashboards        AnalyticsDashboard[]        @relation("AnalyticsDashboardOwner")
+  analyticsDashboardVersions AnalyticsDashboardVersion[] @relation("AnalyticsDashboardVersionCreator")
+  portfolioImports            PortfolioImportJob[]
+
+  @@index([role, status])
+  @@index([invitedByAdminId, invitedAt])
+}
+
+model AdminSession {
+  id               String    @id @default(uuid())
+  adminUserId      String
+  sessionTokenHash String    @unique
+  csrfTokenHash    String
+  expiresAt        DateTime
+  stepUpVerifiedAt DateTime?
+  lastSeenAt       DateTime  @default(now())
+  revokedAt        DateTime?
+  revokedByAdminId String?
+  revocationReason String?
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime  @default(now())
+
+  adminUser AdminUser  @relation(fields: [adminUserId], references: [id])
+  revokedBy AdminUser? @relation("SessionRevoker", fields: [revokedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([adminUserId, expiresAt])
+  @@index([revokedAt, expiresAt])
+  @@index([revokedByAdminId, revokedAt])
+}
+
+model AdminLoginChallenge {
+  id          String    @id @default(uuid())
+  adminUserId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  attempts    Int       @default(0)
+  consumedAt  DateTime?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId, expiresAt])
+}
+
+model AdminBackupCode {
+  id          String    @id @default(uuid())
+  adminUserId String
+  codeHash    String
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId])
+}
+
+model AdminAuditLog {
+  id           String   @id @default(uuid())
+  adminUserId  String?
+  action       String
+  resourceType String
+  resourceId   String?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  success      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  adminUser AdminUser? @relation(fields: [adminUserId], references: [id])
+
+  @@index([adminUserId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([action, createdAt])
+}
+
+model AssetBatch {
+  id               String    @id @default(uuid())
+  name             String
+  assetType        String
+  productType      String
+  quantity         Int
+  status           String    @default("processing") // processing | completed | failed
+  createdByAdminId String
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+
+  createdByAdmin AdminUser @relation(fields: [createdByAdminId], references: [id])
+  assets         Asset[]
+}
+
+model SystemSetting {
+  id                          String   @id @default("platform")
+  supportEmail                String?
+  maintenanceMode             Boolean  @default(false)
+  customerRegistrationEnabled Boolean  @default(true)
+  customerOtpLoginEnabled     Boolean  @default(true)
+  walletRechargeEnabled       Boolean  @default(true)
+  maxRechargeAmount           Decimal  @default(100000.00) @db.Decimal(14, 2)
+  updatedByAdminId            String?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  updatedByAdmin AdminUser? @relation(fields: [updatedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([updatedByAdminId, updatedAt])
+}
+
+model MasterDataImportJob {
+  id                String    @id @default(uuid())
+  datasetType       String
+  sourceFileName    String
+  sourceHash        String
+  sourceRowCount    Int
+  status            String // processing | completed | failed
+  insertedCount     Int       @default(0)
+  updatedCount      Int       @default(0)
+  unchangedCount    Int       @default(0)
+  errorCount        Int       @default(0)
+  headers           Json
+  validationIssues  Json?
+  reason            String
+  importedByAdminId String
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  importedBy AdminUser                 @relation(fields: [importedByAdminId], references: [id], onDelete: Restrict)
+  versions   MasterDataRecordVersion[]
+
+  @@index([datasetType, sourceHash])
+  @@index([datasetType, createdAt])
+  @@index([importedByAdminId, createdAt])
+  @@index([status, createdAt])
+}
+
+model MasterDataRecordVersion {
+  id                String   @id @default(uuid())
+  datasetType       String
+  businessKey       String
+  version           Int
+  label             String
+  searchText        String
+  active            Boolean?
+  payload           Json
+  isCurrent         Boolean  @default(true)
+  sourceRowNumber   Int
+  sourceImportJobId String
+  importedByAdminId String
+  createdAt         DateTime @default(now())
+
+  sourceImportJob MasterDataImportJob @relation(fields: [sourceImportJobId], references: [id], onDelete: Restrict)
+  importedBy      AdminUser           @relation(fields: [importedByAdminId], references: [id], onDelete: Restrict)
+
+  @@unique([datasetType, businessKey, version])
+  @@index([datasetType, isCurrent, createdAt])
+  @@index([datasetType, active, isCurrent])
+  @@index([sourceImportJobId, sourceRowNumber])
+  @@index([importedByAdminId, createdAt])
+}
+
+model Dealer {
+  id             String   @id @default(uuid())
+  name           String
+  normalizedName String   @unique
+  homeState      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  portfolioCases PortfolioCase[]
+
+  @@index([homeState, name])
+}
+
+model PortfolioAccount {
+  id                     String    @id @default(uuid())
+  customerLoanId         String    @unique
+  customerName           String
+  normalizedCustomerName String
+  sourceApplicationNumber String?
+  globalCustomerId       String?
+  lmsCustomerId          String?
+  userId                 String?
+  portfolioStatus        String    @default("ACTIVE")
+  linkedAt               DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  user  User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  cases PortfolioCase[]
+
+  @@index([userId, updatedAt])
+  @@index([portfolioStatus, createdAt])
+  @@index([normalizedCustomerName])
+  @@index([globalCustomerId])
+  @@index([lmsCustomerId])
+}
+
+model PortfolioCase {
+  id                 String    @id @default(uuid())
+  accountId          String
+  dealerId           String
+  sourceImportId     String
+  caseKey             String    @unique
+  sourceRowNumber     Int
+  caseOrdinal         Int
+  sourceFingerprint  String
+  batteryNo           String?
+  batteryIsPlaceholder Boolean @default(false)
+  dealerHomeState     String?
+  deploymentState     String
+  caseStatus          String
+  bucket              String
+  disburseDate        DateTime  @db.Date
+  vintageMonth        DateTime  @db.Date
+  closedDate          DateTime? @db.Date
+  tenureMonths        Int
+  emi                 Decimal   @db.Decimal(14, 2)
+  dpAmount            Decimal   @db.Decimal(14, 2)
+  contractedDemand    Decimal   @db.Decimal(14, 2)
+  billedToDate        Decimal   @db.Decimal(14, 2)
+  futureDemand        Decimal   @db.Decimal(14, 2)
+  delinquent          Boolean   @default(false)
+  npaRepo             Boolean   @default(false)
+  isCurrent           Boolean   @default(true)
+  archivedAt          DateTime?
+  sourceData          Json
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  account      PortfolioAccount   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  dealer       Dealer             @relation(fields: [dealerId], references: [id], onDelete: Restrict)
+  sourceImport PortfolioImportJob @relation(fields: [sourceImportId], references: [id], onDelete: Restrict)
+
+  @@unique([accountId, caseOrdinal])
+  @@index([accountId, isCurrent, disburseDate])
+  @@index([dealerId, isCurrent, caseStatus])
+  @@index([caseStatus, isCurrent, disburseDate])
+  @@index([bucket, isCurrent, disburseDate])
+  @@index([deploymentState, isCurrent])
+  @@index([batteryNo, isCurrent])
+  @@index([delinquent, npaRepo, isCurrent])
+  @@index([sourceImportId])
+}
+
+model PortfolioImportJob {
+  id                String    @id @default(uuid())
+  importedByAdminId String?
+  sourceFileName    String
+  sourceHash        String    @unique
+  fileType          String
+  status            String
+  sourceRowCount    Int
+  normalizedRowCount Int
+  insertedCount     Int       @default(0)
+  updatedCount      Int       @default(0)
+  unchangedCount    Int       @default(0)
+  archivedCount     Int       @default(0)
+  accountCount      Int       @default(0)
+  dealerCount       Int       @default(0)
+  warnings          Json
+  errors            Json
+  reconciliation    Json?
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  importedBy AdminUser?      @relation(fields: [importedByAdminId], references: [id], onDelete: SetNull)
+  cases      PortfolioCase[]
+
+  @@index([status, createdAt])
+  @@index([importedByAdminId, createdAt])
+}
+
+model CustomerIdentityImportJob {
+  id                String    @id @default(uuid())
+  importedByAdminId String?
+  sourceFileName    String
+  sourceHash        String    @unique
+  status            String
+  sourceRowCount    Int
+  validIdentityCount Int
+  createdUserCount  Int       @default(0)
+  existingUserCount Int       @default(0)
+  linkedAccountCount Int      @default(0)
+  unmatchedLoanCount Int      @default(0)
+  conflictCount     Int       @default(0)
+  warnings          Json
+  errors            Json
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+
+  importedBy AdminUser? @relation(fields: [importedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([importedByAdminId, createdAt])
+}
+
+model CustomerActivity {
+  id        String   @id @default(uuid())
+  userId    String
+  eventType String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model AnalyticsDataset {
+  id                    String    @id @default(uuid())
+  ownerAdminId          String
+  name                  String
+  description           String?
+  status                String    @default("UPLOADING") // UPLOADING | PROCESSING | PROFILING | ANALYZING | GENERATING | READY | FAILED
+  processingStage       String    @default("UPLOAD") // UPLOAD | PARSING | READING_SHEETS | PROFILING | UNDERSTANDING | SEMANTIC_MODEL | DASHBOARD_PLANNING | DASHBOARD_GENERATION | PERSISTING | READY | FAILED
+  processingMessage     String?
+  activeSheetId         String?
+  rowCount              Int       @default(0)
+  columnCount           Int       @default(0)
+  datasetVersion        Int       @default(1)
+  semanticModelVersion  Int       @default(0)
+  processingAttempt     Int       @default(0)
+  processingStartedAt   DateTime?
+  processingHeartbeatAt DateTime?
+  lastAnalyzedAt        DateTime?
+  failureCode           String?
+  failureMessage        String?
+  deletedAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  owner            AdminUser                  @relation("AnalyticsDatasetOwner", fields: [ownerAdminId], references: [id], onDelete: Restrict)
+  activeSheet      AnalyticsDatasetSheet?     @relation("AnalyticsDatasetActiveSheet", fields: [activeSheetId], references: [id], onDelete: SetNull)
+  files            AnalyticsDatasetFile[]
+  sheets           AnalyticsDatasetSheet[]    @relation("AnalyticsDatasetSheets")
+  columns          AnalyticsDatasetColumn[]
+  rows             AnalyticsDatasetRow[]
+  profiles         AnalyticsDatasetProfile[]
+  processingEvents AnalyticsProcessingEvent[]
+  semanticModels   AnalyticsSemanticModel[]
+  dashboards       AnalyticsDashboard[]
+
+  @@index([ownerAdminId, deletedAt, updatedAt])
+  @@index([ownerAdminId, status, createdAt])
+  @@index([status, processingHeartbeatAt])
+  @@index([activeSheetId])
+}
+
+model AnalyticsDatasetFile {
+  id               String    @id @default(uuid())
+  datasetId        String
+  version          Int
+  originalFileName String
+  safeFileName     String
+  fileType         String // CSV | XLSX | XLS
+  mimeType         String
+  sizeBytes        BigInt
+  sha256           String
+  storageProvider  String
+  storageKey       String    @unique
+  status           String    @default("STORED") // PENDING | STORED | FAILED | DELETED
+  isCurrent        Boolean   @default(true)
+  sheetCount       Int       @default(0)
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  dataset AnalyticsDataset        @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  sheets  AnalyticsDatasetSheet[]
+
+  @@unique([datasetId, version])
+  @@index([datasetId, isCurrent, createdAt])
+  @@index([sha256])
+  @@index([status, createdAt])
+}
+
+model AnalyticsDatasetSheet {
+  id                   String   @id @default(uuid())
+  datasetId            String
+  fileId               String
+  name                 String
+  sheetIndex           Int
+  status               String   @default("DISCOVERED") // DISCOVERED | SELECTED | PROFILED | FAILED
+  sourceRowCount       Int      @default(0)
+  normalizedRowCount   Int      @default(0)
+  columnCount          Int      @default(0)
+  detectedHeaderRow    Int?
+  dataStartRow         Int?
+  recommendedAsPrimary Boolean  @default(false)
+  recommendationScore  Decimal? @db.Decimal(7, 6)
+  recommendationReason String?
+  metadata             Json?
+  sampleRows           Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  dataset           AnalyticsDataset          @relation("AnalyticsDatasetSheets", fields: [datasetId], references: [id], onDelete: Cascade)
+  file              AnalyticsDatasetFile      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  activeForDatasets AnalyticsDataset[]        @relation("AnalyticsDatasetActiveSheet")
+  columns           AnalyticsDatasetColumn[]
+  rows              AnalyticsDatasetRow[]
+  profiles          AnalyticsDatasetProfile[]
+
+  @@unique([fileId, sheetIndex])
+  @@unique([fileId, name])
+  @@index([datasetId, sheetIndex])
+  @@index([datasetId, recommendedAsPrimary])
+  @@index([status, createdAt])
+}
+
+model AnalyticsDatasetColumn {
+  id             String   @id @default(uuid())
+  datasetId      String
+  sheetId        String
+  ordinal        Int
+  originalName   String
+  normalizedName String
+  displayName    String
+  dataType       String // STRING | INTEGER | DECIMAL | BOOLEAN | DATE | DATETIME | UNKNOWN
+  semanticType   String   @default("UNKNOWN") // IDENTIFIER | DIMENSION | MEASURE | DATE | DATETIME | BOOLEAN | TEXT | CATEGORY | UNKNOWN
+  nullable       Boolean  @default(true)
+  uniqueCount    Int      @default(0)
+  nullCount      Int      @default(0)
+  nullPercentage Decimal  @default(0) @db.Decimal(7, 4)
+  minValue       String?
+  maxValue       String?
+  averageValue   Decimal? @db.Decimal(30, 8)
+  sampleValues   Json
+  statistics     Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  dataset AnalyticsDataset      @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  sheet   AnalyticsDatasetSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@unique([sheetId, normalizedName])
+  @@unique([sheetId, ordinal])
+  @@index([datasetId, semanticType])
+  @@index([datasetId, dataType])
+}
+
+model AnalyticsDatasetRow {
+  id             String   @id @default(uuid())
+  datasetId      String
+  sheetId        String
+  datasetVersion Int
+  rowNumber      Int
+  data           Json
+  createdAt      DateTime @default(now())
+
+  dataset AnalyticsDataset      @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  sheet   AnalyticsDatasetSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@unique([sheetId, datasetVersion, rowNumber])
+  @@index([datasetId, datasetVersion, rowNumber])
+  @@index([sheetId, rowNumber])
+  @@index([data], type: Gin)
+}
+
+model AnalyticsDatasetProfile {
+  id                    String   @id @default(uuid())
+  datasetId             String
+  sheetId               String
+  datasetVersion        Int
+  rowCount              Int
+  columnCount           Int
+  duplicateRowCount     Int      @default(0)
+  profile               Json
+  sampleRows            Json
+  dataQualityWarnings   Json
+  detectedDateRanges    Json?
+  detectedRelationships Json?
+  createdAt             DateTime @default(now())
+
+  dataset AnalyticsDataset      @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  sheet   AnalyticsDatasetSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@unique([datasetId, datasetVersion, sheetId])
+  @@index([datasetId, createdAt])
+}
+
+model AnalyticsProcessingEvent {
+  id        String   @id @default(uuid())
+  datasetId String
+  sequence  Int
+  stage     String
+  status    String // STARTED | COMPLETED | FAILED
+  message   String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  dataset AnalyticsDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@unique([datasetId, sequence])
+  @@index([datasetId, createdAt])
+  @@index([stage, status, createdAt])
+}
+
+model AnalyticsSemanticModel {
+  id                 String   @id @default(uuid())
+  datasetId          String
+  datasetVersion     Int
+  version            Int
+  source             String // AI | FALLBACK
+  provider           String?
+  providerModel      String?
+  schemaVersion      Int      @default(1)
+  semanticModel      Json
+  analysisResult     Json
+  validationWarnings Json?
+  generatedByAdminId String
+  createdAt          DateTime @default(now())
+
+  dataset           AnalyticsDataset            @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  generatedBy       AdminUser                   @relation("AnalyticsSemanticModelCreator", fields: [generatedByAdminId], references: [id], onDelete: Restrict)
+  dashboardVersions AnalyticsDashboardVersion[]
+
+  @@unique([datasetId, version])
+  @@index([datasetId, datasetVersion, createdAt])
+  @@index([generatedByAdminId, createdAt])
+}
+
+model AnalyticsDashboard {
+  id               String    @id @default(uuid())
+  datasetId        String
+  ownerAdminId     String
+  title            String
+  description      String?
+  status           String    @default("READY") // READY | ARCHIVED
+  currentVersionId String?   @unique
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  dataset        AnalyticsDataset            @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  owner          AdminUser                   @relation("AnalyticsDashboardOwner", fields: [ownerAdminId], references: [id], onDelete: Restrict)
+  currentVersion AnalyticsDashboardVersion?  @relation("AnalyticsCurrentDashboardVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  versions       AnalyticsDashboardVersion[] @relation("AnalyticsDashboardVersions")
+
+  @@index([ownerAdminId, deletedAt, updatedAt])
+  @@index([datasetId, status, updatedAt])
+}
+
+model AnalyticsDashboardVersion {
+  id                 String   @id @default(uuid())
+  dashboardId        String
+  semanticModelId    String?
+  datasetVersion     Int
+  version            Int
+  source             String // AI | FALLBACK | USER_EDIT | REGENERATED
+  schemaVersion      Int      @default(1)
+  specification      Json
+  filterState        Json
+  layoutState        Json
+  visualizationState Json
+  insightState       Json
+  generationMetadata Json
+  visualizationCount Int      @default(0)
+  changeSummary      String?
+  aiProvider         String?
+  aiProviderModel    String?
+  createdByAdminId   String
+  createdAt          DateTime @default(now())
+
+  dashboard           AnalyticsDashboard                @relation("AnalyticsDashboardVersions", fields: [dashboardId], references: [id], onDelete: Cascade)
+  semanticModel       AnalyticsSemanticModel?           @relation(fields: [semanticModelId], references: [id], onDelete: SetNull)
+  createdBy           AdminUser                         @relation("AnalyticsDashboardVersionCreator", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+  currentForDashboard AnalyticsDashboard?               @relation("AnalyticsCurrentDashboardVersion")
+  visualizations      AnalyticsDashboardVisualization[]
+  filters             AnalyticsDashboardFilter[]
+  insights            AnalyticsDashboardInsight[]
+
+  @@unique([dashboardId, version])
+  @@index([dashboardId, createdAt])
+  @@index([semanticModelId])
+  @@index([createdByAdminId, createdAt])
+}
+
+model AnalyticsDashboardVisualization {
+  id                 String   @id @default(uuid())
+  dashboardVersionId String
+  widgetKey          String
+  type               String // KPI | BAR | LINE | AREA | PIE | DONUT | SCATTER | TABLE | STACKED_BAR | STACKED_AREA
+  title              String
+  dimensionField     String?
+  measureField       String?
+  aggregation        String? // SUM | AVG | MIN | MAX | COUNT
+  configuration      Json
+  layout             Json
+  visible            Boolean  @default(true)
+  sortOrder          Int
+  createdAt          DateTime @default(now())
+
+  dashboardVersion AnalyticsDashboardVersion @relation(fields: [dashboardVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([dashboardVersionId, widgetKey])
+  @@index([dashboardVersionId, sortOrder])
+  @@index([type, createdAt])
+}
+
+model AnalyticsDashboardFilter {
+  id                 String   @id @default(uuid())
+  dashboardVersionId String
+  filterKey          String
+  field              String
+  type               String // SELECT | MULTI_SELECT | DATE_RANGE | NUMERIC_RANGE | BOOLEAN | SEARCH
+  operator           String?
+  configuration      Json
+  sortOrder          Int
+  createdAt          DateTime @default(now())
+
+  dashboardVersion AnalyticsDashboardVersion @relation(fields: [dashboardVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([dashboardVersionId, filterKey])
+  @@index([dashboardVersionId, sortOrder])
+}
+
+model AnalyticsDashboardInsight {
+  id                 String   @id @default(uuid())
+  dashboardVersionId String
+  content            String
+  source             String // AI | FALLBACK
+  evidence           Json?
+  confidence         Decimal? @db.Decimal(5, 4)
+  sortOrder          Int
+  createdAt          DateTime @default(now())
+
+  dashboardVersion AnalyticsDashboardVersion @relation(fields: [dashboardVersionId], references: [id], onDelete: Cascade)
+
+  @@index([dashboardVersionId, sortOrder])
+}

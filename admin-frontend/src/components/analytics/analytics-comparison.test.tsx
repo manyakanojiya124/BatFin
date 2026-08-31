@@ -1,0 +1,15 @@
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AnalyticsColumn, DashboardVisualizationSpec, SemanticModel } from "../../types/analytics";
+import { ComparisonStudio } from "./ComparisonStudio";
+import { ExpandedVisualizationDialog } from "./ExpandedVisualizationDialog";
+
+const columns:AnalyticsColumn[]=[{normalizedName:"region",displayName:"Region",dataType:"STRING",semanticType:"CATEGORY",uniqueCount:3},{normalizedName:"status",displayName:"Status",dataType:"STRING",semanticType:"CATEGORY",uniqueCount:2},{normalizedName:"amount",displayName:"Amount",dataType:"DECIMAL",semanticType:"MEASURE"}];
+const semantic:SemanticModel={schemaVersion:1,title:"Model",datasetSummary:"A comparison test dataset.",businessDomain:"Test",identifiers:[],dimensions:[{field:"region",label:"Region",kind:"CATEGORY",role:"GEOGRAPHY",description:"Region"},{field:"status",label:"Status",kind:"CATEGORY",role:"STATUS",description:"Status"}],measures:[{id:"amount",field:"amount",label:"Amount",kind:"FIELD",aggregation:"SUM",format:"NUMBER",description:"Amount"}],dateFields:[],suggestedFilters:[],calculatedMetrics:[]};
+afterEach(()=>cleanup());
+const base:DashboardVisualizationSpec={id:"base",type:"BAR",title:"Amount by Region",description:null,dimension:"region",measure:"amount",secondaryMeasure:null,aggregation:"SUM",stackBy:null,columns:[],limit:50,timeGrain:"AUTO",sort:"VALUE_DESC",topN:10,showOther:true,formatOverride:"AUTO",layout:{x:0,y:0,w:6,h:4},visible:true};
+
+describe("comparison and expanded analytics",()=>{
+  it("creates a stacked chart with a user-selected legend column",async()=>{const add=vi.fn().mockResolvedValue(undefined);render(<ComparisonStudio columns={columns} onAdd={add} onRemove={vi.fn()} saving={false} semantic={semantic} visualizations={[base]}/>);fireEvent.click(screen.getByRole("button",{name:/Add comparison chart/i}));fireEvent.click(screen.getByRole("button",{name:"Stacked comparison"}));fireEvent.change(screen.getByRole("combobox",{name:/Legend \/ comparison column/}),{target:{value:"status"}});fireEvent.click(screen.getByRole("button",{name:"Add and save comparison"}));await waitFor(()=>expect(add).toHaveBeenCalledWith(expect.objectContaining({type:"STACKED_BAR",dimension:"region",measure:"amount",stackBy:"status"})))});
+  it("opens a spacious modal visualization and closes it",()=>{const close=vi.fn();render(<ExpandedVisualizationDialog columns={columns} loading={false} onClose={close} onCrossFilter={vi.fn()} onExport={vi.fn()} onPageChange={vi.fn()} onRefresh={vi.fn()} result={{mode:"TABLE",fields:["region"],rows:[{rowNumber:1,data:{region:"North"}}],pagination:{page:1,pageSize:25,total:1,totalPages:1}}} visualization={{...base,type:"TABLE",title:"Explorer",measure:null,dimension:null,aggregation:null,columns:["region"]}}/>);expect(screen.getByRole("dialog",{name:/Explorer/})).toBeInTheDocument();expect(screen.getByText("Expanded visualization")).toBeInTheDocument();fireEvent.click(screen.getByRole("button",{name:"Close expanded chart"}));expect(close).toHaveBeenCalled()});
+});

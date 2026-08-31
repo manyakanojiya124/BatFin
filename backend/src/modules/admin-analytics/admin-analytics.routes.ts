@@ -1,0 +1,216 @@
+import { Router } from "express";
+import multer from "multer";
+
+import { env } from "../../config/env.js";
+import {
+  requireAdminCsrf,
+  requireAdminPermission,
+  requireAdminSession,
+  requireRecentAdminStepUp,
+} from "../../middleware/admin-auth.middleware.js";
+import { adminAnalyticsController } from "./admin-analytics.controller.js";
+
+const adminAnalyticsRouter = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: env.analyticsMaxFileBytes,
+    files: 1,
+    fields: 5,
+    fieldSize: 10_000,
+  },
+});
+
+adminAnalyticsRouter.use(requireAdminSession);
+adminAnalyticsRouter.get(
+  "/ai/status",
+  requireAdminPermission("analytics.manage"),
+  adminAnalyticsController.aiStatus,
+);
+adminAnalyticsRouter.get(
+  "/dashboards",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.listDashboards,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/visualizations/:widgetKey/query",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.queryVisualization,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/query",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.queryDashboard,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/query-batch",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.queryVisualizationsBatch,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/filter-options",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.filterOptions,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/ask",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.askData,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/insights",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.evidenceInsights,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/export",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.exportRows,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/regenerate",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.create"),
+  adminAnalyticsController.regenerateDashboard,
+);
+adminAnalyticsRouter.post(
+  "/dashboards/:id/duplicate",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  adminAnalyticsController.duplicateDashboard,
+);
+adminAnalyticsRouter.patch(
+  "/dashboards/:id",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  adminAnalyticsController.saveDashboard,
+);
+adminAnalyticsRouter.delete(
+  "/dashboards/:id",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  requireRecentAdminStepUp,
+  adminAnalyticsController.deleteDashboard,
+);
+adminAnalyticsRouter.get(
+  "/dashboards/:id",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.getDashboard,
+);
+adminAnalyticsRouter.get(
+  "/datasets",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.list,
+);
+adminAnalyticsRouter.post(
+  "/datasets/upload",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.create"),
+  upload.single("file"),
+  adminAnalyticsController.upload,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/status",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.status,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/sheets",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.sheets,
+);
+adminAnalyticsRouter.post(
+  "/datasets/:id/sheets/:sheetId/select",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  adminAnalyticsController.selectSheet,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/preview",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.preview,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/profile",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.profile,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/history",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.history,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/analysis-context",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.analysisContext,
+);
+adminAnalyticsRouter.post(
+  "/datasets/:id/analyze",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.create"),
+  adminAnalyticsController.analyze,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/semantic-model",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.semanticModel,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id/semantic-models",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.semanticModels,
+);
+adminAnalyticsRouter.post(
+  "/datasets/:id/verify-source",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  adminAnalyticsController.verifySource,
+);
+adminAnalyticsRouter.post(
+  "/datasets/:id/refresh",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  upload.single("file"),
+  adminAnalyticsController.refreshSource,
+);
+adminAnalyticsRouter.post(
+  "/datasets/:id/retry-parsing",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  adminAnalyticsController.retryParsing,
+);
+adminAnalyticsRouter.patch(
+  "/datasets/:id",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  adminAnalyticsController.updateMetadata,
+);
+adminAnalyticsRouter.get(
+  "/datasets/:id",
+  requireAdminPermission("analytics.read"),
+  adminAnalyticsController.getById,
+);
+adminAnalyticsRouter.delete(
+  "/datasets/:id/permanent",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  requireRecentAdminStepUp,
+  adminAnalyticsController.purge,
+);
+adminAnalyticsRouter.delete(
+  "/datasets/:id",
+  requireAdminCsrf,
+  requireAdminPermission("analytics.manage"),
+  requireRecentAdminStepUp,
+  adminAnalyticsController.remove,
+);
+
+export default adminAnalyticsRouter;

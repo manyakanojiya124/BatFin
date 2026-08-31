@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BatFIN</string>
+    <string name="title_activity_main">BatFIN</string>
+    <string name="package_name">in.batfin.customer</string>
+    <string name="custom_url_scheme">in.batfin.customer</string>
+</resources>

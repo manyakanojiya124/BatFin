@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!frontend/.env.mobile-android-emulator
+!frontend/.env.mobile-ios-simulator
+!frontend/.env.mobile-sandbox
+
+# Runtime file storage (uploaded analytics source files)
+backend/storage/
+storage/
+
+# Logs
+*.log
+
+# Editors and OS files
+.DS_Store
+.vscode/
+.idea/

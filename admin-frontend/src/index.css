@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .action-btn {
+    @apply inline-flex min-h-11 items-center gap-2 rounded-xl border border-outline bg-white px-4 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:bg-brand-soft;
+  }
+  .page-btn {
+    @apply inline-flex min-h-10 items-center gap-1 rounded-xl border border-outline bg-white px-3 text-sm font-semibold disabled:opacity-40;
+  }
+  .analytics-panel {
+    @apply rounded-[10px] border border-outline bg-white shadow-card;
+  }
+  .analytics-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-primary;
+  }
+  .analytics-widget-reveal {
+    animation: analytics-widget-reveal 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .analytics-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD2DE transparent;
+  }
+}
+
+@keyframes analytics-widget-reveal {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@layer base {
+  :root {
+    --analytics-ink: #0B1220;
+    --analytics-ink-soft: #1B2536;
+    --analytics-bg: #F3F5F8;
+    --analytics-bg-inset: #EBEEF3;
+    --analytics-card: #FFFFFF;
+    --analytics-border: #E2E6ED;
+    --analytics-border-strong: #CBD2DE;
+    --analytics-text: #101828;
+    --analytics-text-secondary: #5B6472;
+    --analytics-text-tertiary: #8A93A3;
+    --analytics-brand: #0E7C86;
+    --analytics-brand-dark: #075257;
+    --analytics-brand-soft: #E4F3F3;
+    --analytics-positive: #12805C;
+    --analytics-positive-bg: #E7F6EF;
+    --analytics-warning: #B7791F;
+    --analytics-warning-bg: #FBF1DD;
+    --analytics-negative: #C0152F;
+    --analytics-negative-bg: #FCE9EA;
+    color: #101828;
+    background: #F3F5F8;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+  * { box-sizing: border-box; }
+  html, body, #root { min-height: 100%; margin: 0; }
+  body { min-width: 320px; background: #F3F5F8; }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid rgb(14 124 134 / 25%); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

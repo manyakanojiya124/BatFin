@@ -1,0 +1,4 @@
+Invoice Date,Cost Center,Payment Status,Revenue,Expense,Receivable
+2026-01-01,Operations,Paid,250000,150000,0
+2026-01-03,Sales,Pending,180000,90000,180000
+2026-02-01,Operations,Paid,280000,160000,0

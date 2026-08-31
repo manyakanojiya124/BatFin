@@ -1,0 +1,4 @@
+Order Date,Region,Channel,Product,Revenue,Units,Margin Rate
+2026-01-01,North,Online,Battery,120000,12,0.18
+2026-01-02,South,Dealer,Charger,90000,8,0.12
+2026-02-01,North,Dealer,Battery,150000,15,0.21

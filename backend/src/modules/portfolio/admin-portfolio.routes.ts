@@ -1,0 +1,17 @@
+import { Router } from "express";
+import multer from "multer";
+import { env } from "../../config/env.js";
+import { requireAdminCsrf, requireAdminPermission, requireAdminSession, requireRecentAdminStepUp } from "../../middleware/admin-auth.middleware.js";
+import { adminPortfolioController } from "./admin-portfolio.controller.js";
+const router=Router();const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:env.analyticsMaxFileBytes,files:1,fields:3}});
+router.use(requireAdminSession);
+router.get("/summary",requireAdminPermission("portfolio.read"),adminPortfolioController.summary);
+router.get("/imports",requireAdminPermission("portfolio.read"),adminPortfolioController.imports);
+router.post("/import",requireAdminCsrf,requireAdminPermission("portfolio.import"),upload.single("file"),adminPortfolioController.upload);
+router.get("/identity-imports",requireAdminPermission("portfolio.read"),adminPortfolioController.identityImports);
+router.post("/identity-import",requireAdminCsrf,requireAdminPermission("portfolio.import"),upload.single("file"),adminPortfolioController.identityUpload);
+router.get("/accounts",requireAdminPermission("portfolio.read"),adminPortfolioController.list);
+router.get("/accounts/:id",requireAdminPermission("portfolio.read"),adminPortfolioController.getById);
+router.post("/accounts/:id/link-user",requireAdminCsrf,requireAdminPermission("portfolio.manage"),requireRecentAdminStepUp,adminPortfolioController.linkUser);
+router.patch("/cases/:id/status",requireAdminCsrf,requireAdminPermission("portfolio.manage"),requireRecentAdminStepUp,adminPortfolioController.updateStatus);
+export default router;

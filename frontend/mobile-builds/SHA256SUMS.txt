@@ -1,0 +1,3 @@
+d8dd9144d6f3d91e38af3a499de4a9a56baebbe20099f938088537973636be5f  mobile-builds/BatFIN-android-emulator-debug.apk
+fe1277123904a580bc4dfbe973901cba13cde77d9f03004a9700695febf6b1b6  mobile-builds/BatFIN-android-project.zip
+bb236e912fe95064eb328ff64c3a88d77b75cd6b6fe767a263b6ee03d62d6e1d  mobile-builds/BatFIN-ios-project.zip
