@@ -1,0 +1,1 @@
+import{createHash}from"node:crypto";export function deterministicAnalyticsResult<T>(value:T){return{value,source:"FALLBACK" as const,provider:null,model:null,attempts:0,repairAttempted:false,responseSha256:createHash("sha256").update(JSON.stringify(value)).digest("hex"),usage:{promptTokens:null,completionTokens:null,totalTokens:null},fallbackReason:null}}

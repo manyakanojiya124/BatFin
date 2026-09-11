@@ -297,7 +297,6 @@ export function AdminDashboardPage() {
                 onClick={() => void revokeAll()}
                 type="button"
               >
-
                 Revoke all sessions
               </button>
             </section>

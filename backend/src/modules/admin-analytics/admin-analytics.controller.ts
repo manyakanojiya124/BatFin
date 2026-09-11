@@ -47,6 +47,8 @@ const aiStatus: RequestHandler = (_request, response) => {
   });
 };
 
+
+
 const upload: RequestHandler = async (request, response) => {
   const admin = auth(request);
   const result = await adminAnalyticsService.upload(

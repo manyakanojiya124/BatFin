@@ -13,9 +13,13 @@ coverage/
 !frontend/.env.mobile-ios-simulator
 !frontend/.env.mobile-sandbox
 
-# Runtime file storage (uploaded analytics source files)
+# Runtime file storage and private customer source files
 backend/storage/
 storage/
+backend/tests/fixtures/*Portfolio*Final*.csv
+backend/tests/fixtures/*collection_mis*.csv
+*collection_mis_*.csv
+*Portfolio_Summary*Final*.csv
 
 # Logs
 *.log

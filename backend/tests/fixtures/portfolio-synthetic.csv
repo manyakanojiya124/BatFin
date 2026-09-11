@@ -1,0 +1,9 @@
+Synthetic Portfolio Test,,,,,,,,,,,,,,,,,,,
+Non-sensitive generated fixture,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,
+Sno.,Battery No,Customer Loan ID,Customer Name,Dealer,Dealer Home State,Deployment State,Case Status,Bucket,Disburse Date,Vintage,Closed Dt.,Tenure (m),EMI (Rs),DP (Rs),Contracted Demand (Rs),Billed to Date (Rs),Future Demand (Rs),Delinquent (1/0),NPA+Repo (1/0)
+1,TEST-BAT-001,TESTLOAN001,Test Customer One,Test Dealer A,Bihar,Bihar,ACTIVE,CURRENT,28-Aug-25,Aug-25,,12,"5,000","15,000","60,000","50,000","10,000",0,0
+2,TEST-BAT-002,TESTLOAN002,Test Customer Two,Test Dealer B,Uttar Pradesh,Uttar Pradesh,ACTIVE,30-59 DAYS,1-Sep-25,Sep-25,,18,"4,000","12,000","72,000","20,000","52,000",1,0
+3,TEST-BAT-003,TESTLOAN002,Test Customer Two,Test Dealer B,Uttar Pradesh,Uttar Pradesh,REDEPLOYED,CURRENT,1-Oct-25,Oct-25,,18,"4,000","12,000","72,000",-,"72,000",0,0
+4,TEST-BAT-004,TESTLOAN003,Test Customer Three,Test Dealer C,Uttrakhand,Uttrakhand,REPO,NPA,1-Nov-25,Nov-25,1/17/2026,12,"5,500","10,000","66,000","30,000",-,1,1
+TOTAL,,,,,,,,,,,,,"18,500","49,000","270,000","100,000","134,000",2,1

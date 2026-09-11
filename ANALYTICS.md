@@ -13,8 +13,9 @@ CSV / XLS / XLSX
 → summary-row exclusion and quality profiling
 → normalized PostgreSQL JSONB rows
 → privacy-aware compact context
-→ OpenRouter interpretation or deterministic fallback
+→ OpenRouter or deterministic fallback
 → Zod validation
+→ validated semantic model and dashboard specification
 → deterministic semantic reconciliation
 → visualization compatibility/cardinality reconciliation
 → bounded query preflight
@@ -126,7 +127,6 @@ The browser sends structured query JSON only. All fields and metrics are checked
 - debounced filters
 - batch widget requests, AbortController cancellation, and stale-response guards
 - responsive 1/2/12-column grid without implicit mobile columns
-- table pagination, column visibility, row details, and filtered export
 - progressive-disclosure dataset quality and preview screens
 - duplicate-source SHA-256 badges and explicit permanent-delete controls
 - query-backed evidence cards
@@ -218,12 +218,14 @@ All mutation routes require an authenticated admin session, permission, and CSRF
 
 ## Regression fixture
 
-The primary fixture is checked into:
+The primary acceptance source is loaded from a private external path and is deliberately not committed to Git because it contains customer data:
 
 ```text
-backend/tests/fixtures/BatFIN_Portfolio_Summary_July26_Final.csv
+/home/user/uploads/BatFIN_Portfolio_Summary_July26_Final.csv
 SHA-256: 32367d39574bbaf7f554cbdfc2bd9fce56bb31fac39faee6d7ae53117291fa7e
 ```
+
+Repository tests use generated synthetic fixtures only.
 
 Observed source structure:
 

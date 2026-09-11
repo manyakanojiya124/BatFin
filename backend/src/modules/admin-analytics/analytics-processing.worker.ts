@@ -106,12 +106,8 @@ async function failDataset(
   error: unknown,
   attemptedStage: string,
 ) {
-  const code =
-    error instanceof ApiError ? error.code : "ANALYTICS_PROCESSING_FAILED";
-  const message =
-    error instanceof ApiError
-      ? error.message
-      : "Dataset source could not be parsed";
+  const code=error instanceof ApiError?error.code:"ANALYTICS_PROCESSING_FAILED";
+  const message=error instanceof ApiError?error.message:"Analytics processing could not be completed";
   await prisma.$transaction(async (transaction) => {
     await transaction.analyticsDataset.updateMany({
       where: { id: datasetId, deletedAt: null },

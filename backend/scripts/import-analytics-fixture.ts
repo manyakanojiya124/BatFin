@@ -5,7 +5,7 @@ import { prisma } from "../src/database/prisma.js";
 import { adminAnalyticsService } from "../src/modules/admin-analytics/admin-analytics.service.js";
 import { analyticsProcessingWorker } from "../src/modules/admin-analytics/analytics-processing.worker.js";
 
-const sourcePath = resolve(process.argv[2] ?? "tests/fixtures/BatFIN_Portfolio_Summary_July26_Final.csv");
+const sourcePath = resolve(process.argv[2] ?? "tests/fixtures/portfolio-synthetic.csv");
 const adminEmail = process.env.ANALYTICS_FIXTURE_ADMIN_EMAIL ?? "superadmin@batfin.local";
 const force = process.env.ANALYTICS_FIXTURE_FORCE === "true";
 

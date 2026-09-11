@@ -37,6 +37,8 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
+
+
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
       response.status(409).json({

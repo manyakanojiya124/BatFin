@@ -11,7 +11,7 @@ import { normalizeAnalyticsSheet } from "../src/modules/admin-analytics/analytic
 import { createDeterministicSemanticModel } from "../src/modules/admin-analytics/analytics-semantic-fallback.service.js";
 
 function portfolioContext() {
-  const csv = readFileSync(new URL("./fixtures/BatFIN_Portfolio_Summary_July26_Final.csv", import.meta.url), "utf8");
+  const csv = readFileSync(new URL("./fixtures/portfolio-synthetic.csv", import.meta.url), "utf8");
   const matrix = parse(csv, { bom: true, relax_column_count: true, skip_empty_lines: false }) as unknown[][];
   const header = detectHeaderRow(matrix)!;
   const normalized = normalizeAnalyticsSheet(matrix, header);
@@ -42,7 +42,7 @@ function portfolioContext() {
 test("portfolio regression fixture detects headers and excludes aggregate summary rows", () => {
   const { normalized } = portfolioContext();
   assert.equal(normalized.columns.length, 20);
-  assert.equal(normalized.rowCount, 664);
+  assert.equal(normalized.rowCount, 4);
   assert.equal(normalized.excludedSummaryRowCount, 1);
   assert.equal(normalized.columns.find((column) => column.normalizedName === "disburse_date")?.dataType, "DATE");
   assert.ok(["INTEGER", "DECIMAL"].includes(normalized.columns.find((column) => column.normalizedName === "billed_to_date_rs")?.dataType ?? ""));

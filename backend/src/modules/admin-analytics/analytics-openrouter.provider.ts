@@ -449,7 +449,6 @@ export class OpenRouterProvider implements AIProvider {
     ];
     let attempts = 0;
     let usage = emptyUsage();
-
     const run = async (
       messages: Array<{
         role: "system" | "user" | "assistant";
